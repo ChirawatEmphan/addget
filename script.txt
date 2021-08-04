@@ -1,0 +1,82 @@
+//get events from calendar
+function getEvents() {
+ 
+  var calenDar = CalendarApp.getCalendarById("calendar id");
+  var lastDateOfYear = new Date(new Date().getFullYear(), 11, 31); // JavaScript counts months from 0 to 11. January is 0. December is 11.
+  var events = calenDar.getEvents(new Date(), lastDateOfYear); // new Date() = today
+  var spreadSheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  var lastRow = spreadSheet.getLastRow();
+  spreadSheet.getRange(2, 1, lastRow, 5).clearContent();
+  
+  for(var i = 0; i < events.length; i++) {
+    var title = events[i].getTitle();
+    var start = events[i].getStartTime();
+    var end = events[i].getEndTime();
+    var location = events[i].getLocation();
+    var description = events[i].getDescription();
+    
+    spreadSheet.getRange(i+2, 1).setValue(title);
+    spreadSheet.getRange(i+2, 2).setValue(start);
+    spreadSheet.getRange(i+2, 2).setNumberFormat("dd/mm/yyyy h:mm:ss");
+    spreadSheet.getRange(i+2, 3).setValue(end);
+    spreadSheet.getRange(i+2, 3).setNumberFormat("dd/mm/yyyy h:mm:ss");
+    spreadSheet.getRange(i+2, 4).setValue(location);
+    spreadSheet.getRange(i+2, 5).setValue(description);
+  }
+}
+
+
+//delete and add events to calendar
+function addEvents() {
+  
+  //open the event calendar
+  var calenDar = CalendarApp.getCalendarById("calendar id");
+  var spreadSheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  //pull information into the code, in a form that the code can understand
+  var lastRow = spreadSheet.getLastRow();
+  var data = spreadSheet.getRange("A2:E" + lastRow).getValues();
+  
+  /**
+  [
+    [event-1, start time-1, end time-1, location-1, description-1],
+    [event-2, start time-2, end time-2, location-2, description-2],
+    ..............................................................,
+    [event-n, start time-n, end time-n, location-n, description-n]
+  ]
+  **/
+  
+  //delete events
+  var lastDateOfYear = new Date(new Date().getFullYear(), 11, 31); // JavaScript counts months from 0 to 11. January is 0. December is 11.
+  var events = calenDar.getEvents(new Date(), lastDateOfYear); // new Date() = today
+  for (var i = 0; i < events.length; i++) {
+    var eventsDelete = events[i];
+    eventsDelete.deleteEvent();
+    Utilities.sleep(100);
+  }
+  
+  //add events
+  for(var i = 0; i < data.length; i++) {
+    var title = data[i][0];
+    var startTime = data[i][1];
+    Logger.log(startTime);
+    var endTime = data[i][2];
+    var location = data[i][3];
+    var description = data[i][4];
+    
+    calenDar.createEvent(title, startTime, endTime, {location: location, description: description}); //(Title, Start Time, End Time, {options})
+    //calenDar.createEvent(data[i][0], data[i][1], data[i][2], {location: data[i][3], description: data[i][4]}); //(Title, Start Time, End Time, {options})
+    Utilities.sleep(100);
+  }
+}
+
+
+//create menu for sync to calendar
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('การทำงาน')
+    .addItem('Add events to calendar', 'addEvents')
+    .addItem('Get events from calendar', 'getEvents')
+    .addToUi();
+}
